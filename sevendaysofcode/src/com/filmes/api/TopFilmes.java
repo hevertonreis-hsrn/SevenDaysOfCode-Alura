@@ -1,10 +1,4 @@
-package com.explorer.filme.api.controller;
-
-import com.explorer.filme.api.filmes.DadosListagemFilmes;
-import com.explorer.filme.api.view.HtmlGenerator;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+package com.filmes.api;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -19,36 +13,36 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-@RestController
-@RequestMapping("/topfilmes")
-public class TopFilmesController {
+import com.filmes.api.filmes.DadosListagemFilmes;
+import com.filmes.api.view.HtmlGenerator;
 
-    HttpClient client = HttpClient.newHttpClient();
+public class TopFilmes {
+	
+	static HttpClient client = HttpClient.newHttpClient();
+	
+	static String apiKey = "k_l24l9cm1"; 
 
-    String apiKey = "k_l24l9cm1";
+	public static void main(String[] args) throws IOException, InterruptedException {
+		
+		URI apiIMDB = URI.create("https://imdb-api.com/en/API/Top250Movies/" + apiKey);
 
-    @GetMapping
-    public void listar() throws IOException, InterruptedException {
+		HttpRequest request = HttpRequest.newBuilder().uri(apiIMDB).build();
 
-        URI apiIMDB = URI.create("https://imdb-api.com/en/API/Top250Movies/" + apiKey);
+		HttpResponse<String> response = client
+				.send(request, HttpResponse.BodyHandlers.ofString());
 
-        HttpRequest request = HttpRequest.newBuilder().uri(apiIMDB).build();
+		String json = response.body();
 
-        HttpResponse<String> response = client
-                .send(request, HttpResponse.BodyHandlers.ofString());
+		List<DadosListagemFilmes> filmes = parse(json);
 
-        String json = response.body();
+		//System.out.println(filmes);
 
-        List<DadosListagemFilmes> filmes = parse(json);
+		PrintWriter writer = new PrintWriter("content.html");
+		new HtmlGenerator(writer).generate(filmes);
+		writer.close();
+	}
 
-        PrintWriter writer = new PrintWriter("content.html");
-        new HtmlGenerator(writer).generate(filmes);
-        writer.close();
-
-        //return json;
-    }
-
-    private List<DadosListagemFilmes> parse(String json) {
+	private static List<DadosListagemFilmes> parse(String json) {
 
         String[] filmesLista = parseJsonFilmes(json);
 
@@ -73,23 +67,23 @@ public class TopFilmesController {
         return filmes;
     }
 
-    private List<String> parseYears(String[] filmesLista) {
+    private static List<String> parseYears(String[] filmesLista) {
         return parseAtributo(filmesLista, 4);
     }
 
-    private List<String> parseRatings(String[] filmesLista) {
+    private static List<String> parseRatings(String[] filmesLista) {
         return parseAtributo(filmesLista, 7);
     }
 
-    private List<String> parseUrlImages(String[] filmesLista) {
+    private static List<String> parseUrlImages(String[] filmesLista) {
         return parseAtributo(filmesLista, 5);
     }
 
-    private List<String> parseTitles(String[] filmesLista) {
+    private static List<String> parseTitles(String[] filmesLista) {
         return parseAtributo(filmesLista, 2);
     }
 
-    private List<String> parseAtributo(String[] filmesLista, int posicao) {
+    private static List<String> parseAtributo(String[] filmesLista, int posicao) {
 
         return Stream
                 .of(filmesLista)
@@ -99,7 +93,7 @@ public class TopFilmesController {
                 .collect(Collectors.toList());
     }
 
-    private String[] parseJsonFilmes(String json) {
+    private static String[] parseJsonFilmes(String json) {
 
         Matcher matcher = Pattern
                 .compile(".*\\[(.*)\\].*")
@@ -120,4 +114,5 @@ public class TopFilmesController {
 
         return filmesLista;
     }
+
 }
